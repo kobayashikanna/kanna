@@ -47,4 +47,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	//TODO: client
+
+	server := New(&ServerConfig{
+
+	})
+	server.listenAndServe("127.0.0.1", 51234)
+
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/songgao/water"
 	"net"
 	log "github.com/sirupsen/logrus"
+	"fmt"
 )
 
 type udpPacket struct {
@@ -35,11 +36,14 @@ func (s *Server) readFromConn() {
 
 }
 
-func (s *Server) listenAndServe(addr string, port string) {
-	port = addr + ":" + port
-	udpAddr, err := net.ResolveUDPAddr("udp", port)
+func (s *Server) listenAndServe(addr string, port uint32) {
+	listenPort := fmt.Sprintf("%s:%d", addr, port)
+	log.Debug("Server listen at ", listenPort)
+
+
+	udpAddr, err := net.ResolveUDPAddr("udp", listenPort)
 	if err != nil {
-		log.Error("Invalid port: %s", port)
+		log.Error("Invalid port: ", port)
 		return
 	}
 	udpConn, err := net.ListenUDP("udp", udpAddr)
@@ -51,6 +55,7 @@ func (s *Server) listenAndServe(addr string, port string) {
 	// write
 	go func() {
 		packet := <- s.sentChan
+		log.Info("send packet")
 		udpConn.WriteTo(packet.data, packet.addr)
 	}()
 
@@ -66,6 +71,7 @@ func (s *Server) listenAndServe(addr string, port string) {
 		packet.addr = addr
 		packet.data = buffer[:n]
 
+		log.Info("recv packet")
 		s.receivedChan <- packet
 	}
 
