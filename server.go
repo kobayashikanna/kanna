@@ -13,27 +13,58 @@ type udpPacket struct {
 }
 
 type Server struct {
-	iface *water.Interface
 
+	// config
+	config *ServerConfig
+
+	// RECV/SEND channel
 	sentChan chan *udpPacket
 	receivedChan chan *udpPacket
 	ifaceFromChan chan []byte
 	ifaceSendChan chan []byte
+
+	// TUN
+	iface *water.Interface
 }
 
 func New(cfg *ServerConfig) (server *Server) {
 	server = new(Server)
 
+	server.config = cfg
 	server.receivedChan = make(chan *udpPacket, 2048)
 	server.sentChan = make(chan *udpPacket, 2048)
 	server.ifaceFromChan = make(chan []byte, 2048)
 	server.ifaceSendChan = make(chan []byte, 2048)
 
+	server.newTunnel()
 	return
 }
 
-func (s *Server) readFromConn() {
 
+func (s *Server) createTun() (iface *water.Interface, err error) {
+	iface, err = water.New(water.Config{
+		DeviceType: water.TUN,
+	})
+
+	log.WithField("deviceName", iface.Name()).Debug("TUN device created")
+	if err != nil {
+		return nil, err
+	}
+
+	return
+
+}
+
+func (s *Server) newTunnel() (err error) {
+	iface, err := s.createTun()
+	if err != nil {
+		return err
+	}
+
+	s.iface = iface
+
+
+	return
 }
 
 func (s *Server) listenAndServe(addr string, port uint32) {
